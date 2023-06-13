@@ -1,0 +1,15 @@
+name: Update database types
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Generate Supabase Database types
+      uses: lyqht/generate-supabase-db-types-github-action@v0.1.0
+      with:
+          SUPABASE_URL: ${{secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          OUTPUT_PATH: src/types/supabase.ts

@@ -1,0 +1,73 @@
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+platform :android do
+  desc "Runs all the tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Increment version code and add git tag"
+  lane :vc_and_tag do |options|
+    increment_version_code(
+      gradle_file_path: "./app/build.gradle",
+    )
+
+    add_git_tag(
+      grouping: "builds",
+      includes_lane: true,
+      prefix: "android",
+      build_number: options[:current_build_number],
+      force: true,
+    )
+  end
+
+  desc "Create a new app bundle for release"
+  lane :bundle do
+    gradle(task: 'clean')
+    gradle(
+      task: 'bundle',
+      build_type: 'Release'
+    )
+  end
+
+  desc "Submit a new bundle to Play Store: Internal Track"
+  lane :internal do
+    previous_build_number = google_play_track_version_codes(
+      track: "internal",
+    ).first
+
+    current_build_number = previous_build_number + 1
+    vc_and_tag(current_build_number: current_build_number)
+    bundle()
+    upload_to_play_store(
+      track: 'internal', 
+      version_name: "#{current_build_number}", 
+      version_code: current_build_number, 
+      release_status: 'draft',
+      aab: "./app/build/outputs/bundle/release/app-release.aab"
+    )
+  end
+
+  desc "Submit a new bundle to Play Store: Closed Testing Track"
+  lane :alpha do
+    previous_build_number = google_play_track_version_codes(
+      track: "alpha",
+    ).first
+
+    current_build_number = previous_build_number + 1
+    vc_and_tag(current_build_number: current_build_number)
+    bundle()
+    upload_to_play_store(
+      track: 'alpha',
+      version_name: "#{current_build_number}.0", 
+      release_status: 'draft',
+      version_code: current_build_number, 
+      aab: "./app/build/outputs/bundle/release/app-release.aab"
+    )
+  end
+
+
+end
